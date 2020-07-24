@@ -4,24 +4,35 @@ namespace App;
 
 use Carbon\Carbon;
 
+/**
+ * Based upon the free time available in attendees calendar we
+ * now apply the rules they set in the calendar application to
+ * generate appointments.
+ *
+ * The only rules not considered in this class (handled later)
+ * are:
+ * 'available_times' (the slots defined as available in the app ) are handled in DetermineAppointmentOverlap
+ * 'max_interviews_per_day'
+ */
 class AppointmentMachine
 {
 
-    public function handle(array $data, $rules)
+    public function handle(array $freeTimeFoundInCalendars, $rules)
     {
         $now = Carbon::now();
-        foreach ($rules['data']['availability'] as $date => $availability_slots) {
+        foreach ($freeTimeFoundInCalendars as $date => $availability_slots) {
 
             foreach ($availability_slots as $slot) {
 
                 $start = $slot['start_free'];
-                if ($start->isPast()) {
+
+                if ($start->isPast() || in_array($start->format('w'), $rules['data']['exclude_days'])) {
                     continue;
                 }
                 $end = $slot['end_free'];
-                $duration = $rules['data']['duration'];
-                $interval = $rules['data']['interval'];
-                $start_increment = $rules['data']['start_increment'];
+                $duration = $rules['data']['interview_duration_hours']['value'] + $rules['data']['interview_duration_minutes']['value'];
+                $interval = $rules['data']['interval']['value'];
+                $start_increment = $rules['data']['availability_increments']['value'];
                 $noSpaceForInterview = $start->diffInMinutes($end) < ($duration + $interval);
                 if ($noSpaceForInterview) {
                     continue;
@@ -32,7 +43,7 @@ class AppointmentMachine
                 //7am  120
                 //7.01  119 -> should increment start time by 1 min
                 //take buffer before earliest booking time into account
-                if ($now < $start && $now->diffInMinutes($start) < $rules['data']['start_time_buffer']) {
+                if ($now < $start && $now->diffInMinutes($start) < $rules['data']['min_time_before_booking']['value']) {
                     //current time falls inside the buffer zone
                     $start = clone $now;
                     //add the difference between now and buffer on to the earliest start time
