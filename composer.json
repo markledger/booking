@@ -1,0 +1,17 @@
+{
+  "name": "mark/booking",
+  "authors": [
+    {
+      "name": "Mark Ledger",
+      "email": "mark_ledger@outlook.com"
+    }
+  ],
+  "require": {
+    "nesbot/carbon": "^2.36"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  }
+}
